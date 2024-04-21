@@ -4,6 +4,11 @@
 const { app, BrowserWindow, Menu } = require('electron');
 const log = require('electron-log');
 const { autoUpdater } = require("electron-updater");
+const http = require('http');
+
+// Interval to check for updates (in milliseconds)
+// const updateCheckInterval = 24 * 60 * 60 * 1000; // 24 hours
+const updateCheckInterval = 60 * 1000; // 24 hours
 
 //-------------------------------------------------------------------
 // Logging
@@ -74,12 +79,60 @@ function createDefaultWindow() {
   win.loadURL(`file://${__dirname}/version.html#v${app.getVersion()}`);
   return win;
 }
+
+function clientApprovedForUpdates(version) {
+  const options = {
+    hostname: '127.0.0.1',
+    port: 8000,
+    path: `/updateAvailable?version=${version}&machine=123`,
+    method: 'GET',
+  };
+
+  const req = http.request(options, (res) => {
+    let data = '';
+
+    // Concatenate data chunks as they arrive
+    res.on('data', (chunk) => {
+      data += chunk;
+    });
+
+    // Handle the end of the response
+    res.on('end', () => {
+      // If the request is successful (status code 200), handle the response
+      if (res.statusCode === 200) {
+        console.log('Response:', data);
+        // Do something with the response data
+        sendStatusToWindow(`Update ${version} downloading.`);
+        autoUpdater.version = version.version;
+        autoUpdater.downloadUpdate();
+      } else {
+        console.error('Error: Unexpected status code:', res.statusCode);
+        // Handle other status codes (optional)
+        sendStatusToWindow(`Update ${version} not approved.`);
+      }
+    });
+  });
+
+  // Handle errors during the request
+  req.on('error', (error) => {
+    console.error('Error:', error.message);
+    sendStatusToWindow(`Update ${version} not approved.`);
+    // Handle the error accordingly
+  });
+
+  // End the request
+  req.end();
+
+}
+
 autoUpdater.on('checking-for-update', () => {
   sendStatusToWindow('Checking for update...');
 })
 autoUpdater.on('update-available', (info) => {
-  sendStatusToWindow('Update available.');
+  sendStatusToWindow(`Update available ${info.version}.`);
+  clientApprovedForUpdates(info.version);
 })
+
 autoUpdater.on('update-not-available', (info) => {
   sendStatusToWindow('Update not available.');
 })
@@ -96,29 +149,31 @@ autoUpdater.on('update-downloaded', (info) => {
   sendStatusToWindow('Update downloaded');
   autoUpdater.quitAndInstall();
 });
+
+app.on('window-all-closed', () => {
+  app.quit();
+});
+
+
 app.on('ready', function () {
+
   // Create the Menu
   const menu = Menu.buildFromTemplate(template);
   Menu.setApplicationMenu(menu);
 
   createDefaultWindow();
-});
-app.on('window-all-closed', () => {
-  app.quit();
-});
 
-//
-// CHOOSE one of the following options for Auto updates
-//
+  autoUpdater.autoDownload = false;
 
-//-------------------------------------------------------------------
-// Auto updates - Option 1 - Simplest version
-//
-// This will immediately download an update, then install when the
-// app quits.
-//-------------------------------------------------------------------
-app.on('ready', function () {
-  autoUpdater.checkForUpdatesAndNotify();
+  function checkForUpdates() {
+    autoUpdater.checkForUpdatesAndNotify();
+  }
+
+  // Call checkForUpdates initially when the app is ready
+  checkForUpdates();
+
+  // Set up interval to check for updates periodically
+  setInterval(checkForUpdates, updateCheckInterval);
 });
 
 
