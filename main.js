@@ -1,9 +1,9 @@
 // This is free and unencumbered software released into the public domain.
 // See LICENSE for details
 
-const {app, BrowserWindow, Menu} = require('electron');
+const { app, BrowserWindow, Menu } = require('electron');
 const log = require('electron-log');
-const {autoUpdater} = require("electron-updater");
+const { autoUpdater } = require("electron-updater");
 
 //-------------------------------------------------------------------
 // Logging
@@ -62,8 +62,10 @@ function createDefaultWindow() {
   win = new BrowserWindow({
     webPreferences: {
       nodeIntegration: true,
-      contextIsolation: false
-    }
+      contextIsolation: false,
+
+    },
+    darkTheme: true
   });
   win.webContents.openDevTools();
   win.on('closed', () => {
@@ -94,7 +96,7 @@ autoUpdater.on('update-downloaded', (info) => {
   sendStatusToWindow('Update downloaded');
   autoUpdater.quitAndInstall();
 });
-app.on('ready', function() {
+app.on('ready', function () {
   // Create the Menu
   const menu = Menu.buildFromTemplate(template);
   Menu.setApplicationMenu(menu);
@@ -115,7 +117,7 @@ app.on('window-all-closed', () => {
 // This will immediately download an update, then install when the
 // app quits.
 //-------------------------------------------------------------------
-app.on('ready', function()  {
+app.on('ready', function () {
   autoUpdater.checkForUpdatesAndNotify();
 });
 
