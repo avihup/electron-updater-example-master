@@ -1,10 +1,11 @@
 {
   "name": "electron-updater-example",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "main": "main.js",
   "description": "electron-updater example project",
   "author": "Matt Haggard",
   "scripts": {
+    "start": "electron .",
     "publish": "electron-builder -p always"
   },
   "devDependencies": {
@@ -17,7 +18,14 @@
     "electron-updater": "^4.3.9"
   },
   "build": {
-    "appId": "com.github.iffy.electronupdaterexample",
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "avihup",
+        "repo": "electron-updater-example-master"
+      }
+    ],
+    "appId": "com.github.avihup.electronupdaterexamplemaster",
     "afterSign": "./build/notarize.js",
     "mac": {
       "category": "your.app.category.type"
